@@ -153,4 +153,4 @@ public class MainMenu {
 
         scanner.close();
     }
-}
+} // then update main with respect to that 
