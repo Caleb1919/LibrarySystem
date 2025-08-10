@@ -28,7 +28,7 @@ public class MainMenu {
 // A while loop that will create a menu for the program
         
         while (running) {
-            System.out.println("\n===== 📚 Ebenezer Library Management System =====");
+            System.out.println("\n===== 📚 Ebenezer Community Library System =====");
             System.out.println("1. List All Books");
             System.out.println("2. Add Book");
             System.out.println("3. Remove Book");
@@ -183,3 +183,4 @@ public class MainMenu {
         scanner.close();
     }
 }
+
