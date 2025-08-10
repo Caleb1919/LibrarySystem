@@ -2,6 +2,7 @@ package main;
 
 import core.*;
 import java.util.Scanner;
+import java.util.List;
 
 public class MainMenu {
 
@@ -13,6 +14,8 @@ public class MainMenu {
         LendingTracker lendingTracker = new LendingTracker(inventory, borrowerRegistry);
         OverdueMonitor overdueMonitor = new OverdueMonitor(lendingTracker, borrowerRegistry);
         ReportGenerator reportGenerator = new ReportGenerator(lendingTracker, borrowerRegistry, inventory);
+        BookSearch bookSearch = new BookSearch(inventory);
+        BookSorter bookSorter = new BookSorter(inventory);
 
         // Load existing data
         inventory.loadBooks();
@@ -21,9 +24,11 @@ public class MainMenu {
 
         Scanner scanner = new Scanner(System.in);
         boolean running = true;
-
+        
+// A while loop that will create a menu for the program
+        
         while (running) {
-            System.out.println("\n===== 📚 Library Management System =====");
+            System.out.println("\n===== 📚 Ebenezer Library Management System =====");
             System.out.println("1. List All Books");
             System.out.println("2. Add Book");
             System.out.println("3. Remove Book");
@@ -34,7 +39,9 @@ public class MainMenu {
             System.out.println("8. View Transactions");
             System.out.println("9. Check Overdue Books");
             System.out.println("10. Reports Menu");
-            System.out.println("11. Save & Exit");
+            System.out.println("11. Search Book by Title");
+            System.out.println("12. Sort Books by Title (A–Z)");
+            System.out.println("13. Save & Exit");
             System.out.print("Enter choice: ");
 
             String choice = scanner.nextLine();
@@ -138,7 +145,29 @@ public class MainMenu {
                     }
                     break;
 
-                case "11":
+                case "11": // Search book by title
+                    System.out.print("Enter title to search: ");
+                    String searchTitle = scanner.nextLine();
+                    List<Book> searchResults = bookSearch.searchByTitle(searchTitle);
+                    if (searchResults.isEmpty()) {
+                        System.out.println("⚠ No books found with that title.");
+                    } else {
+                        System.out.println("\n📚 Search Results:");
+                        for (Book b : searchResults) {
+                            System.out.println(b);
+                        }
+                    }
+                    break;
+
+                case "12": // Sort books by title
+                    List<Book> sortedBooks = bookSorter.selectionSortByTitle();
+                    System.out.println("\n📚 Books Sorted by Title (A–Z):");
+                    for (Book b : sortedBooks) {
+                        System.out.println(b);
+                    }
+                    break;
+
+                case "13":
                     inventory.saveBooks();
                     borrowerRegistry.saveBorrowers();
                     lendingTracker.saveTransactions();
@@ -153,4 +182,4 @@ public class MainMenu {
 
         scanner.close();
     }
-} // then update main with respect to that 
+}
