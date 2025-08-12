@@ -1,6 +1,6 @@
 package core;
 
-public class Book {
+public class Book implements Comparable<Book> {
     private String title;
     private String author;
     private String ISBN;
@@ -31,5 +31,11 @@ public class Book {
     public String toString() {
         return String.format("📖 %s by %s | ISBN: %s | Year: %d | Publisher: %s | Shelf: %s",
                 title, author, ISBN, year, publisher, shelfLocation);
+    }
+
+    // Needed for BST sorting (by ISBN here)
+    @Override
+    public int compareTo(Book other) {
+        return this.ISBN.compareToIgnoreCase(other.ISBN);
     }
 }

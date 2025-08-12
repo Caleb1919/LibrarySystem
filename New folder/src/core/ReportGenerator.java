@@ -23,7 +23,7 @@ public class ReportGenerator {
         Map<String, Integer> borrowCount = new HashMap<>();
         LocalDate now = LocalDate.now();
 
-        for (Transaction t : lendingTracker.getAllTransactions()) {
+        for (Transaction t : lendingTracker.getAllTransactions()) { // Uses MyQueue.toList()
             if ("BORROWED".equalsIgnoreCase(t.getStatus()) || "RETURNED".equalsIgnoreCase(t.getStatus())) {
                 if (t.getBorrowDate().getMonth() == now.getMonth() && t.getBorrowDate().getYear() == now.getYear()) {
                     borrowCount.put(t.getBookISBN(), borrowCount.getOrDefault(t.getBookISBN(), 0) + 1);
@@ -41,8 +41,10 @@ public class ReportGenerator {
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
                 .limit(5)
                 .forEach(e -> {
-                    Book b = findBookByISBN(e.getKey());
-                    System.out.println(b.getTitle() + " - " + e.getValue() + " times");
+                    Book b = inventory.searchBook(e.getKey()); // MyBST search
+                    if (b != null) {
+                        System.out.println(b.getTitle() + " - " + e.getValue() + " times");
+                    }
                 });
     }
 
@@ -50,7 +52,7 @@ public class ReportGenerator {
      * Borrowers with highest outstanding fines
      */
     public void borrowersWithHighestFines() {
-        List<Borrower> borrowers = new ArrayList<>(borrowerRegistry.getAllBorrowers());
+        List<Borrower> borrowers = borrowerRegistry.getAllBorrowers(); // Sorted from MyBST
 
         if (borrowers.isEmpty()) {
             System.out.println("📂 No borrowers found.");
@@ -78,19 +80,5 @@ public class ReportGenerator {
         for (String category : booksByCategory.keySet()) {
             System.out.printf("%s: %d books%n", category, booksByCategory.get(category).size());
         }
-    }
-
-    /**
-     * Helper to find a book by ISBN
-     */
-    private Book findBookByISBN(String isbn) {
-        for (List<Book> books : inventory.getBooksByCategory().values()) {
-            for (Book b : books) {
-                if (b.getISBN().equalsIgnoreCase(isbn)) {
-                    return b;
-                }
-            }
-        }
-        return null;
     }
 }

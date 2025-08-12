@@ -68,6 +68,13 @@ public class BookSorter {
     }
 
     /**
+     * Get books sorted by ISBN using the MyBST from Inventory (fast)
+     */
+    public List<Book> getBooksSortedByISBN() {
+        return inventory.getBookTree().inOrderList(); // direct BST traversal
+    }
+
+    /**
      * Helper to get all books from inventory
      */
     private List<Book> getAllBooks() {

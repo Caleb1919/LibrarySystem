@@ -1,11 +1,13 @@
 package core;
 
+import dsa.MyQueue;
 import java.time.LocalDate;
 import java.util.*;
 
 public class LendingTracker {
 
-    private Queue<Transaction> transactions = new LinkedList<>();
+    // Use custom queue implementation
+    private MyQueue<Transaction> transactions = new MyQueue<>();
     private static final String TRANSACTIONS_FILE = "data/transactions.txt";
 
     private Inventory inventory;
@@ -32,8 +34,8 @@ public class LendingTracker {
             return;
         }
 
-        // Check if already borrowed by this borrower and not returned
-        for (Transaction t : transactions) {
+        // Check if already borrowed and not returned
+        for (Transaction t : transactions.toList()) { // Convert MyQueue to list for iteration
             if (t.getBookISBN().equalsIgnoreCase(isbn) &&
                 t.getBorrowerId().equalsIgnoreCase(borrowerId) &&
                 t.getStatus().equals("BORROWED")) {
@@ -44,7 +46,7 @@ public class LendingTracker {
 
         borrower.borrowBook(isbn);
         Transaction transaction = new Transaction(isbn, borrowerId, LocalDate.now(), null, "BORROWED");
-        transactions.add(transaction);
+        transactions.enqueue(transaction);
 
         System.out.println("✅ Book lent successfully to " + borrower.getName());
     }
@@ -60,7 +62,8 @@ public class LendingTracker {
         }
 
         boolean found = false;
-        for (Transaction t : transactions) {
+        List<Transaction> tempList = transactions.toList();
+        for (Transaction t : tempList) {
             if (t.getBookISBN().equalsIgnoreCase(isbn) &&
                 t.getBorrowerId().equalsIgnoreCase(borrowerId) &&
                 t.getStatus().equals("BORROWED")) {
@@ -87,7 +90,7 @@ public class LendingTracker {
             System.out.println("📂 No lending transactions recorded.");
             return;
         }
-        for (Transaction t : transactions) {
+        for (Transaction t : transactions.toList()) {
             System.out.println(t);
         }
     }
@@ -97,7 +100,7 @@ public class LendingTracker {
      */
     public void saveTransactions() {
         List<String> lines = new ArrayList<>();
-        for (Transaction t : transactions) {
+        for (Transaction t : transactions.toList()) {
             lines.add(t.getBookISBN() + "|" + t.getBorrowerId() + "|" +
                       t.getBorrowDate() + "|" +
                       (t.getReturnDate() != null ? t.getReturnDate() : "") + "|" +
@@ -117,7 +120,7 @@ public class LendingTracker {
                 LocalDate borrowDate = LocalDate.parse(data[2]);
                 LocalDate returnDate = data[3].isEmpty() ? null : LocalDate.parse(data[3]);
                 Transaction t = new Transaction(data[0], data[1], borrowDate, returnDate, data[4]);
-                transactions.add(t);
+                transactions.enqueue(t);
             }
         }
     }
@@ -126,7 +129,7 @@ public class LendingTracker {
      * Get all transactions (used by OverdueMonitor, ReportGenerator)
      */
     public List<Transaction> getAllTransactions() {
-        return new ArrayList<>(transactions);
+        return transactions.toList();
     }
 
     /**

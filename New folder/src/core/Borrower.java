@@ -2,7 +2,7 @@ package core;
 
 import java.util.*;
 
-public class Borrower {
+public class Borrower implements Comparable<Borrower> {
     private String name;
     private String id;
     private List<String> borrowedISBNs;
@@ -39,5 +39,13 @@ public class Borrower {
     public String toString() {
         return String.format("👤 %s | ID: %s | Borrowed Books: %s | Fines: %.2f | Contact: %s",
                 name, id, borrowedISBNs, fines, contactInfo);
+    }
+
+    /**
+     * Compare borrowers by ID (case-insensitive)
+     */
+    @Override
+    public int compareTo(Borrower other) {
+        return this.id.compareToIgnoreCase(other.id);
     }
 }

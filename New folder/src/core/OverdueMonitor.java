@@ -1,12 +1,13 @@
 package core;
 
+import dsa.MyQueue;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Comparator;
 
 public class OverdueMonitor {
 
-    private PriorityQueue<Transaction> overdueQueue;
+    private MyQueue<Transaction> overdueQueue;
 
     private LendingTracker lendingTracker;
     private BorrowerRegistry borrowerRegistry;
@@ -17,18 +18,18 @@ public class OverdueMonitor {
         this.lendingTracker = lendingTracker;
         this.borrowerRegistry = borrowerRegistry;
 
-        // Sort by soonest due date (smallest borrowDate)
-        overdueQueue = new PriorityQueue<>(Comparator.comparing(Transaction::getBorrowDate));
+        // Our custom queue (can work as a priority queue when needed)
+        overdueQueue = new MyQueue<>();
     }
 
     /**
      * Load all BORROWED transactions into priority queue
      */
     public void loadBorrowedTransactions() {
-        overdueQueue.clear();
+        overdueQueue = new MyQueue<>(); // Reset queue
         for (Transaction t : lendingTracker.getAllTransactions()) {
             if (t.getStatus().equals("BORROWED")) {
-                overdueQueue.add(t);
+                overdueQueue.enqueueWithPriority(t, Comparator.comparing(Transaction::getBorrowDate));
             }
         }
     }
@@ -46,7 +47,7 @@ public class OverdueMonitor {
         boolean anyOverdue = false;
 
         while (!overdueQueue.isEmpty()) {
-            Transaction t = overdueQueue.poll();
+            Transaction t = overdueQueue.dequeue();
             long daysBorrowed = ChronoUnit.DAYS.between(t.getBorrowDate(), today);
 
             if (daysBorrowed > 14) {

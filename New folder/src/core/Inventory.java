@@ -1,157 +1,90 @@
 package core;
 
+import dsa.MyBST;
+import dsa.MyQueue;
+import dsa.MyStack;
 import java.util.*;
+
+/**
+ * Inventory manages books in two complementary structures:
+ * - booksByCategory (Map for grouping / listing by category)
+ * - bookTree (BST for fast ordered operations / sorted traversal)
+ *
+ * Both exist because each structure solves a different use case:
+ * - Map gives quick grouping and iteration by category
+ * - BST gives ordered traversal and reasonably fast search/insertion
+ */
 
 public class Inventory {
 
     // Map: category → list of books in that category
     private Map<String, List<Book>> booksByCategory = new HashMap<>();
 
-    // Root of the Binary Search Tree (BST) for all books
-    private BookNode root;
+    // Binary Search Tree for all books (sorted by ISBN)
+    private MyBST<Book> bookTree = new MyBST<>();
+
+    // Stack to store recently removed books (for undo feature)
+    private MyStack<Book> removedBooks = new MyStack<>();
+
+    // Queue to store recently added books
+    private MyQueue<Book> recentBooks = new MyQueue<>();
 
     // File for storing book data
     private static final String BOOKS_FILE = "data/books.txt";
 
-    /**
-     * Node class for Binary Search Tree
-     */
-    private static class BookNode {
-        Book book;
-        BookNode left, right;
-
-        BookNode(Book book) {
-            this.book = book;
-        }
-    }
-
-    /**
-     * Add a new book to inventory
-     */
+    /** Add a new book to inventory */
     public void addBook(Book book) {
         booksByCategory.putIfAbsent(book.getCategory(), new ArrayList<>());
         booksByCategory.get(book.getCategory()).add(book);
 
-        // Insert into BST for sorted storage
-        root = insertIntoBST(root, book);
+        // Add to BST
+        bookTree.insert(book);
+
+        // Track in queue
+        recentBooks.enqueue(book);
 
         System.out.println("✅ Book added successfully.");
     }
 
-    /**
-     * BST insertion (sorted by ISBN)
-     */
-    private BookNode insertIntoBST(BookNode node, Book book) {
-        if (node == null) return new BookNode(book);
-
-        if (book.getISBN().compareToIgnoreCase(node.book.getISBN()) < 0) {
-            node.left = insertIntoBST(node.left, book);
-        } else if (book.getISBN().compareToIgnoreCase(node.book.getISBN()) > 0) {
-            node.right = insertIntoBST(node.right, book);
-        }
-        return node;
-    }
-
-    /**
-     * Search for a book by ISBN using BST
-     */
+    /** Search for a book by ISBN using BST */
     public Book searchBook(String isbn) {
-        return searchBST(root, isbn);
-    }
-
-    private Book searchBST(BookNode node, String isbn) {
-        if (node == null) return null;
-
-        if (isbn.equalsIgnoreCase(node.book.getISBN())) return node.book;
-        if (isbn.compareToIgnoreCase(node.book.getISBN()) < 0) {
-            return searchBST(node.left, isbn);
-        } else {
-            return searchBST(node.right, isbn);
+        for (Book b : bookTree.inOrderList()) {
+            if (b.getISBN().equalsIgnoreCase(isbn)) return b;
         }
+        return null;
     }
 
-    /**
-     * Remove a book by ISBN (removes from map and BST)
-     */
+    /** Remove a book by ISBN */
     public boolean removeBook(String isbn) {
-        boolean removedFromMap = false;
+        Book bookToRemove = searchBook(isbn);
+        if (bookToRemove != null) {
+            booksByCategory.get(bookToRemove.getCategory())
+                    .removeIf(b -> b.getISBN().equalsIgnoreCase(isbn));
 
-        for (List<Book> bookList : booksByCategory.values()) {
-            Iterator<Book> iterator = bookList.iterator();
-            while (iterator.hasNext()) {
-                Book b = iterator.next();
-                if (b.getISBN().equalsIgnoreCase(isbn)) {
-                    iterator.remove();
-                    removedFromMap = true;
-                    break;
-                }
-            }
-        }
+            bookTree.delete(bookToRemove);
+            removedBooks.push(bookToRemove);
 
-        if (removedFromMap) {
-            root = removeFromBST(root, isbn);
             System.out.println("✅ Book removed successfully.");
             return true;
         }
-
         System.out.println("⚠ Book not found.");
         return false;
     }
 
-    /**
-     * BST removal
-     */
-    private BookNode removeFromBST(BookNode node, String isbn) {
-        if (node == null) return null;
-
-        if (isbn.compareToIgnoreCase(node.book.getISBN()) < 0) {
-            node.left = removeFromBST(node.left, isbn);
-        } else if (isbn.compareToIgnoreCase(node.book.getISBN()) > 0) {
-            node.right = removeFromBST(node.right, isbn);
-        } else {
-            // Node to delete found
-            if (node.left == null) return node.right;
-            else if (node.right == null) return node.left;
-
-            // Node with two children: get inorder successor
-            node.book = findMin(node.right);
-            node.right = removeFromBST(node.right, node.book.getISBN());
-        }
-        return node;
-    }
-
-    private Book findMin(BookNode node) {
-        while (node.left != null) node = node.left;
-        return node.book;
-    }
-
-    /**
-     * Get sorted list of books using in-order BST traversal
-     */
+    /** Get sorted list of books (in-order traversal) */
     public void listBooksSorted() {
-        if (root == null) {
+        List<Book> sortedBooks = bookTree.inOrderList();
+        if (sortedBooks.isEmpty()) {
             System.out.println("📂 No books in inventory.");
             return;
         }
         System.out.println("📚 Books (sorted by ISBN):");
-        inOrderTraversal(root);
-    }
-
-    private void inOrderTraversal(BookNode node) {
-        if (node != null) {
-            inOrderTraversal(node.left);
-            System.out.println(node.book);
-            inOrderTraversal(node.right);
+        for (Book b : sortedBooks) {
+            System.out.println(b);
         }
     }
 
-    public Map<String, List<Book>> getBooksByCategory() {
-        return booksByCategory;
-    }
-
-    /**
-     * Normal category-wise listing
-     */
+    /** Normal category-wise listing */
     public void listBooks() {
         if (booksByCategory.isEmpty()) {
             System.out.println("📂 No books in inventory.");
@@ -165,9 +98,7 @@ public class Inventory {
         }
     }
 
-    /**
-     * Save books to file using FileManager
-     */
+    /** Save books to file */
     public void saveBooks() {
         List<String> lines = new ArrayList<>();
         for (List<Book> bookList : booksByCategory.values()) {
@@ -179,9 +110,7 @@ public class Inventory {
         FileManager.writeToFile(BOOKS_FILE, lines);
     }
 
-    /**
-     * Load books from file using FileManager
-     */
+    /** Load books from file */
     public void loadBooks() {
         List<String> lines = FileManager.readFromFile(BOOKS_FILE);
         for (String line : lines) {
@@ -189,8 +118,25 @@ public class Inventory {
             if (data.length == 7) {
                 Book b = new Book(data[0], data[1], data[2], data[3],
                         Integer.parseInt(data[4]), data[5], data[6]);
-                addBook(b); // this adds to map and BST
+                addBook(b);
             }
         }
+    }
+
+    // ===== GETTERS =====
+    public Map<String, List<Book>> getBooksByCategory() {
+        return booksByCategory;
+    }
+
+    public MyBST<Book> getBookTree() {
+        return bookTree;
+    }
+
+    public MyStack<Book> getRemovedBooksStack() {
+        return removedBooks;
+    }
+
+    public MyQueue<Book> getRecentBooksQueue() {
+        return recentBooks;
     }
 }

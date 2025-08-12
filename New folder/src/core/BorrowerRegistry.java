@@ -1,11 +1,19 @@
 package core;
 
+import dsa.MyBST;
+import dsa.MyStack;
 import java.util.*;
 
 public class BorrowerRegistry {
 
-    // Map: borrower ID → Borrower object
+    // Map for quick ID lookup
     private Map<String, Borrower> borrowers = new HashMap<>();
+
+    // BST for sorted order
+    private MyBST<Borrower> borrowerTree = new MyBST<>();
+
+    // Stack to store recently removed borrowers
+    private MyStack<Borrower> removedBorrowers = new MyStack<>();
 
     // File path for saving borrowers
     private static final String BORROWERS_FILE = "data/borrowers.txt";
@@ -19,21 +27,25 @@ public class BorrowerRegistry {
             return;
         }
         borrowers.put(borrower.getId(), borrower);
+        borrowerTree.insert(borrower);
         System.out.println("✅ Borrower added successfully.");
     }
 
     /**
-     * Get all borrowers as a list
+     * Get all borrowers sorted by ID
      */
     public List<Borrower> getAllBorrowers() {
-        return new ArrayList<>(borrowers.values());
+        return borrowerTree.inOrderList();
     }
 
     /**
      * Remove a borrower by ID
      */
     public boolean removeBorrower(String id) {
-        if (borrowers.remove(id) != null) {
+        Borrower removed = borrowers.remove(id);
+        if (removed != null) {
+            borrowerTree.delete(removed);
+            removedBorrowers.push(removed);
             System.out.println("✅ Borrower removed successfully.");
             return true;
         }
@@ -42,35 +54,31 @@ public class BorrowerRegistry {
     }
 
     /**
-     * List all borrowers
+     * List all borrowers (sorted by ID)
      */
     public void listBorrowers() {
-        if (borrowers.isEmpty()) {
+        List<Borrower> sortedList = borrowerTree.inOrderList();
+        if (sortedList.isEmpty()) {
             System.out.println("📂 No borrowers registered.");
             return;
         }
-        for (Borrower b : borrowers.values()) {
+        for (Borrower b : sortedList) {
             System.out.println(b);
         }
     }
 
     /**
-     * Recursive search for borrower by ID
+     * Search borrower by ID using BST search
      */
     public Borrower findBorrowerById(String id) {
-        return findBorrowerRecursive(new ArrayList<>(borrowers.values()), id, 0);
-    }
-
-    // Recursive helper method
-    private Borrower findBorrowerRecursive(List<Borrower> list, String id, int index) {
-        if (index >= list.size()) return null; // Base case: not found
-        Borrower current = list.get(index);
-        if (current.getId().equalsIgnoreCase(id)) return current; // Found
-        return findBorrowerRecursive(list, id, index + 1); // Recursive call
+        for (Borrower b : borrowerTree.inOrderList()) {
+            if (b.getId().equalsIgnoreCase(id)) return b;
+        }
+        return null;
     }
 
     /**
-     * Save borrowers to file using FileManager
+     * Save borrowers to file
      */
     public void saveBorrowers() {
         List<String> lines = new ArrayList<>();
@@ -83,7 +91,7 @@ public class BorrowerRegistry {
     }
 
     /**
-     * Load borrowers from file using FileManager
+     * Load borrowers from file
      */
     public void loadBorrowers() {
         List<String> lines = FileManager.readFromFile(BORROWERS_FILE);
@@ -97,6 +105,7 @@ public class BorrowerRegistry {
                 Borrower b = new Borrower(data[0], data[1], borrowedBooks,
                                           Double.parseDouble(data[3]), data[4]);
                 borrowers.put(b.getId(), b);
+                borrowerTree.insert(b);
             }
         }
     }
